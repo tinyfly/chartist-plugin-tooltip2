@@ -1,7 +1,7 @@
 /**
  * Chartist.js plugin to display a tooltip on top of a chart.
  * @author  Antonia Ciocodeica
- * @version 0.5.0 21 Mar 2018
+ * @version 0.6.0 21 Mar 2018
  */
 (function (root, factory) {
   if (typeof define === 'function' && define.amd) {
@@ -42,6 +42,13 @@
             // "this" is the current chart
             // It must return the formatted value to be added in the tooltip (eg: currency format)
             valueTransformFunction: null,
+
+            // tooltip transform function
+            // It receives two arguments: chart meta and the current value
+            // "this" is the current chart
+            // It must return a formatted string
+            // If this exists it'll override the `elementTemplateSelector` and 'template' options
+            tooltipTransformFunction: null,
 
             // Use an already existing element as a template for the tooltip.
             // The content of the element must be a Mustache-style template
@@ -223,20 +230,25 @@
 
                     triggerElement.setAttribute('aria-describedby', options.id);
 
-                    // value
-                    textMarkup = textMarkup.replace(new RegExp('{{value}}', 'gi'), value);
-
-                    // replace all known {{}} occurences with their respective values
-                    if (meta && typeof meta === 'object') {
-                        for (var metaKey in meta) {
-                            textMarkup = textMarkup.replace(new RegExp('{{' + metaKey + '}}', 'gi'), meta[metaKey] || '');
-                        }
+                    // Create the tooltip content
+                    if (typeof options.tooltipTransformFunction === 'function') {
+                        textMarkup = options.tooltipTransformFunction.call(chart, meta, value);
                     } else {
-                        textMarkup = textMarkup.replace(new RegExp('{{meta}}', 'gi'), meta || '');
-                    }
+                        // value
+                        textMarkup = textMarkup.replace(new RegExp('{{value}}', 'gi'), value);
 
-                    // series name
-                    textMarkup = textMarkup.replace(new RegExp('{{seriesName}}', 'gi'), seriesName || '');
+                        // replace all known {{}} occurences with their respective values
+                        if (meta && typeof meta === 'object') {
+                            for (var metaKey in meta) {
+                                textMarkup = textMarkup.replace(new RegExp('{{' + metaKey + '}}', 'gi'), meta[metaKey] || '');
+                            }
+                        } else {
+                            textMarkup = textMarkup.replace(new RegExp('{{meta}}', 'gi'), meta || '');
+                        }
+
+                        // series name
+                        textMarkup = textMarkup.replace(new RegExp('{{seriesName}}', 'gi'), seriesName || '');
+                    }
 
                     tooltipElement.innerHTML = textMarkup;
                     tooltipElement.removeAttribute('hidden');
